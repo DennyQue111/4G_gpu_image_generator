@@ -1,53 +1,49 @@
 # 4G GPU Image Generator
 
-面向低配置 Windows 电脑的批量背景图生成器，适合短视频字幕、文字向上滚动、名言展示和信息卡片。
+真正使用 Stable Diffusion 1.5 的本地 Windows AI 背景图生成器，面向 4 GB 显存电脑。
 
-## 两种运行方式
+## 工作方式
 
-### Lite EXE（推荐）
+应用本身是轻量单文件 EXE，不捆绑数 GB 模型。首次点击“下载 AI 组件”时，应用会下载：
 
-- 不需要 ComfyUI
-- 不需要安装 Python
-- 不需要显卡，也不占 GPU 显存
-- 支持一句话描述风格并批量生成变体
-- 通过 GitHub Actions 自动构建
+- stable-diffusion.cpp Windows Vulkan 推理引擎
+- Stable Diffusion 1.5 Q4 GGUF 模型
 
-### 可选 AI 模式
-
-提供 Stable Diffusion 1.5 后端，使用 FP16、注意力切片、VAE 切片、CPU 卸载和逐张生成来适配 4 GB NVIDIA 显存。因为 PyTorch 与模型权重很大，AI 依赖不打包进 Lite EXE。参见 [AI 模式说明](docs/AI_MODE.md)。
+组件保存在 `%LOCALAPPDATA%\4GImageGenerator`。下载完成后可离线生成，不需要 ComfyUI，也不上传提示词或图片。
 
 ## 功能
 
-- 6 种基础风格和“自动匹配”
-- 中文或英文自然语言风格描述
+- 自然语言描述背景，不再使用固定风格和颜色预设
+- 同一描述批量生成多个随机变体
 - 9:16、16:9、1:1、4:5
-- 一次生成 1–100 张同风格变体
-- 自选主题色、压暗程度与文字安全区
-- JPG/PNG 输出
-- 固定种子复现同一批结果
+- 自动提示模型为滚动文字保留居中、左侧或右侧空间
+- SD 1.5 Q4、Flash Attention、3.5GB VRAM预算
+- 低分辨率逐张生成，再高质量放大导出
+- 可删除模型释放磁盘空间
 
-## 下载 Windows EXE
+## 下载
 
-打开仓库的 **Actions → Build Windows EXE**，进入最新成功任务，在 **Artifacts** 下载 `4GImageGenerator-Windows`。创建 `v*` 标签时，EXE 也会自动附加到 GitHub Release。
+在仓库 **Actions → Build Windows AI App** 中下载最新的 `4GImageGenerator-Windows-AI`。
 
-## 从源码运行
+## 首次运行
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe app.py
-```
+1. 运行 `4GImageGenerator.exe`。
+2. 点击“下载 AI 组件”，准备约4GB磁盘空间。
+3. 下载完成后输入描述并生成。
+4. Windows Defender 可能对未签名的新 EXE 提示风险；可在 GitHub Actions 中核对构建来源。
 
-## 测试与本地打包
+## 4GB显存注意事项
 
-```powershell
-python -m pip install -r requirements-dev.txt
-python -m pytest -q
-python -m PyInstaller --noconfirm --clean --onefile --windowed --name 4GImageGenerator --collect-all PIL app.py
-```
+- 生成时关闭游戏、视频剪辑和其他占用显卡的程序。
+- 应用逐张生成，不能并行批量。
+- 原始推理尺寸为512级，完成后放大至目标尺寸。
+- Vulkan后端通常无需单独安装CUDA Toolkit，但显卡驱动应保持更新。
+- 若显卡或驱动不支持Vulkan，当前版本不能使用GPU推理。
 
-生成的文件位于 `dist\4GImageGenerator.exe`。
+## 数据来源与许可
 
-## 许可
+- 推理引擎：[stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp)，随其许可证发布。
+- 模型：[kostakoff/stable-diffusion-v1-5-GGUF](https://huggingface.co/kostakoff/stable-diffusion-v1-5-GGUF)，继承 CreativeML OpenRAIL-M。
+- 项目代码：MIT。
 
-项目代码采用 MIT License。第三方库和 AI 模型遵循各自许可证。
+模型与引擎由应用从上游直接下载，本仓库不重新分发权重。
