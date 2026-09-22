@@ -61,8 +61,9 @@ def _choose_style(style: str, description: str) -> str:
     if style != "自动匹配":
         return style
     text = description.lower()
+    if any(word in text for word in ("古风", "国风", "水墨", "国画", "中式", "ink")) or ("山" in text and "水" in text):
+        return "水墨留白"
     mapping = (
-        (("水墨", "国风", "山水", "ink"), "水墨留白"),
         (("纸", "复古", "羊皮", "paper"), "纸张颗粒"),
         (("科技", "赛博", "网格", "tech", "cyber"), "几何科技"),
         (("星", "宇宙", "夜空", "space"), "星尘夜空"),
@@ -77,6 +78,7 @@ def _choose_style(style: str, description: str) -> str:
 def _description_color(base, description: str):
     text = description.lower()
     colors = {
+        ("古风", "国风", "水墨", "国画", "中式"): (92, 86, 68),
         ("红", "red"): (122, 32, 42),
         ("橙", "orange"): (149, 73, 27),
         ("黄", "gold", "金"): (133, 105, 33),
@@ -141,13 +143,37 @@ def make_background(settings: Settings, variant: int = 0) -> Image.Image:
         for _ in range(max(900, width * height // 900)):
             draw.point((rng.randrange(width), rng.randrange(height)), fill=(255, 245, 220, rng.randint(8, 35)))
     elif style == "水墨留白":
-        image = _gradient(size, (226, 228, 220), _shift(base, 0, -0.55, 0.35)).convert("RGBA")
-        for _ in range(14):
-            x = rng.choice((rng.randint(-width//5, width//3), rng.randint(2*width//3, 6*width//5)))
-            y = rng.randint(-height//10, height)
-            rx, ry = rng.randint(width//8, width//2), rng.randint(height//20, height//5)
-            draw.ellipse((x-rx, y-ry, x+rx, y+ry), fill=(*_shift(base, 0, -0.25, -0.28), rng.randint(12, 42)))
-        art = art.filter(ImageFilter.GaussianBlur(max(16, width // 28)))
+        # Warm rice-paper base plus recognisable mountain and water silhouettes.
+        image = _gradient(size, (232, 228, 211), (192, 190, 171)).convert("RGBA")
+        horizon = int(height * 0.64)
+        ink = (42, 48, 43)
+        for depth in range(4):
+            baseline = horizon + depth * max(10, height // 35)
+            points = [(0, height)]
+            step = max(35, width // 12)
+            for x in range(-step, width + step, step):
+                peak = rng.randint(height // 16, max(height // 15 + 1, height // 4))
+                wave = abs(math.sin(x / max(1, width) * math.tau * rng.uniform(0.8, 1.8) + depth))
+                points.append((x, int(baseline - peak * (0.35 + wave))))
+            points.extend(((width, height), (0, height)))
+            shade = 26 + depth * 9
+            draw.polygon(points, fill=(*ink, shade))
+        # Mist and a restrained cinnabar sun create a clearer ancient-Chinese look.
+        sun_radius = max(8, width // 35)
+        sun_x, sun_y = int(width * 0.78), int(height * 0.22)
+        draw.ellipse((sun_x-sun_radius, sun_y-sun_radius, sun_x+sun_radius, sun_y+sun_radius),
+                     fill=(147, 54, 44, 115))
+        water_start = int(height * 0.73)
+        for y in range(water_start, int(height * 0.94), max(8, height // 85)):
+            inset = rng.randint(0, max(1, width // 8))
+            draw.line((inset, y, width-inset, y), fill=(*ink, rng.randint(12, 30)),
+                      width=max(1, width // 500))
+        for _ in range(8):
+            x = rng.choice((rng.randint(-width//8, width//4), rng.randint(3*width//4, width)))
+            y = rng.randint(height//6, horizon)
+            rx, ry = rng.randint(width//12, width//4), rng.randint(height//35, height//10)
+            draw.ellipse((x-rx, y-ry, x+rx, y+ry), fill=(*ink, rng.randint(8, 22)))
+        art = art.filter(ImageFilter.GaussianBlur(max(2, width // 220)))
     elif style == "星尘夜空":
         for _ in range(max(90, width * height // 8000)):
             x, y = rng.randrange(width), rng.randrange(height)
