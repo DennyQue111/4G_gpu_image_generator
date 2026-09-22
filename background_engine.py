@@ -156,9 +156,11 @@ def make_background(settings: Settings, variant: int = 0) -> Image.Image:
                          fill=(210, 230, 255, rng.randint(55, 180)))
     image = Image.alpha_composite(image, art)
 
-    noise = Image.effect_noise(size, rng.uniform(7, 14)).convert("L")
-    noise = ImageEnhance.Contrast(noise).enhance(0.42)
-    grain = Image.merge("RGBA", (noise, noise, noise, noise.point(lambda p: p // 14)))
+    # Pillow's effect_noise uses an internal random source and is slow on some
+    # Windows machines. randbytes is deterministic, fast and seed-controlled.
+    noise = Image.frombytes("L", size, rng.randbytes(width * height))
+    noise = ImageEnhance.Contrast(noise).enhance(0.10)
+    grain = Image.merge("RGBA", (noise, noise, noise, noise.point(lambda p: p // 16)))
     image = Image.alpha_composite(image, grain)
 
     if settings.safe_zone != "无":
