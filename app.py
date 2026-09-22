@@ -45,7 +45,7 @@ class App(tk.Tk):
         preview.pack(side="right", fill="both", expand=True)
 
         ttk.Label(controls, text=APP_NAME, font=("Microsoft YaHei UI", 18, "bold")).pack(anchor="w")
-        ttk.Label(controls, text="批量生成适合滚动文字的统一风格背景", foreground="#94a3b8").pack(anchor="w", pady=(2, 16))
+        ttk.Label(controls, text="Lite 程序化引擎 · 关键词驱动 · 无需模型", foreground="#94a3b8").pack(anchor="w", pady=(2, 16))
 
         self.description = tk.StringVar(value="深蓝色科技感，柔和光线，简洁低对比度")
         self.style = tk.StringVar(value="自动匹配")
@@ -58,7 +58,7 @@ class App(tk.Tk):
         self.seed = tk.StringVar()
         self.output = tk.StringVar(value=str(Path.home() / "Pictures" / "4GImageGenerator"))
 
-        self._field(controls, "用一句话描述风格", ttk.Entry(controls, textvariable=self.description))
+        self._field(controls, "风格关键词（例：古风，有山有水）", ttk.Entry(controls, textvariable=self.description))
         self._field(controls, "基础风格", ttk.Combobox(controls, textvariable=self.style, state="readonly", values=STYLES))
         self._field(controls, "画面比例", ttk.Combobox(controls, textvariable=self.ratio, state="readonly", values=tuple(DIMENSIONS)))
 
