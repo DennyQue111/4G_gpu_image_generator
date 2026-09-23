@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from inference_engine import Generation, SIZES, build_command, enhanced_prompt
-from model_manager import Components, component_paths
+from model_manager import MODEL_URLS, Components, component_paths
 
 
 def job():
@@ -28,3 +28,8 @@ def test_component_paths_are_separate_from_exe(tmp_path):
     assert components.root == tmp_path
     assert components.model.parent == tmp_path / "models"
     assert components.cli.parent == tmp_path / "runtime"
+
+
+def test_domestic_mirror_is_tried_before_official_huggingface():
+    assert "hf-mirror.com" in MODEL_URLS[0][1]
+    assert "huggingface.co" in MODEL_URLS[1][1]
