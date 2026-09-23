@@ -140,6 +140,7 @@ class App(tk.Tk):
         if not messagebox.askyesno(APP_NAME, "将下载推理引擎和约3GB的模型。是否继续？"):
             return
         self.install_button.configure(state="disabled")
+        self.import_button.configure(state="disabled")
         self.progress.configure(mode="determinate", value=0, maximum=100)
         threading.Thread(target=self._install_worker, daemon=True).start()
 
@@ -193,6 +194,7 @@ class App(tk.Tk):
             return
         self.generate_button.configure(state="disabled")
         self.install_button.configure(state="disabled")
+        self.import_button.configure(state="disabled")
         self.progress.configure(value=0, maximum=count)
         threading.Thread(target=self._generate_worker, args=(job,), daemon=True).start()
 
