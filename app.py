@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from inference_engine import DEFAULT_NEGATIVE, Generation, SIZES, generate_batch
-from model_manager import component_paths, install_components, remove_components
+from model_manager import component_paths, import_model, install_components, remove_components
 
 APP_NAME = "4G 显存 AI 背景图生成器"
 
@@ -50,8 +50,10 @@ class App(tk.Tk):
         self.model_status.pack(side="left", fill="x", expand=True)
         self.install_button = ttk.Button(model_box, text="下载 AI 组件", command=self.install)
         self.install_button.pack(side="right", padx=8, pady=7)
+        self.import_button = ttk.Button(model_box, text="导入本地模型", command=self.import_local)
+        self.import_button.pack(side="right", pady=7)
         self.remove_button = ttk.Button(model_box, text="删除组件", command=self.remove)
-        self.remove_button.pack(side="right", pady=7)
+        self.remove_button.pack(side="right", padx=(0, 6), pady=7)
 
         ttk.Label(root, text="描述你想生成的背景").pack(anchor="w")
         self.prompt = tk.Text(root, height=5, wrap="word", font=("Microsoft YaHei UI", 11),
@@ -100,7 +102,7 @@ class App(tk.Tk):
         self.generate_button = ttk.Button(root, text="开始 AI 批量生成", style="Accent.TButton", command=self.generate)
         self.generate_button.pack(fill="x", pady=(13, 0))
 
-        ttk.Label(root, text="首次下载约 3GB；生成在本机完成。4GB显存建议关闭占用显卡的软件。",
+        ttk.Label(root, text="模型优先走国内镜像并支持断点续传；也可以手动导入 GGUF 文件。",
                   foreground="#64748b").pack(anchor="center", pady=(9, 0))
 
     @staticmethod
@@ -121,11 +123,13 @@ class App(tk.Tk):
             size = self.components.model.stat().st_size / 1024**3
             self.model_status.configure(text=f"AI组件已就绪 · SD 1.5 Q4 · {size:.1f} GB", fg="#4ade80")
             self.install_button.configure(text="重新检查", state="normal")
+            self.import_button.configure(state="normal")
             self.remove_button.configure(state="normal")
             self.generate_button.configure(state="normal")
         else:
             self.model_status.configure(text="尚未安装 AI 推理引擎和模型", fg="#fbbf24")
             self.install_button.configure(text="下载 AI 组件", state="normal")
+            self.import_button.configure(state="normal")
             self.remove_button.configure(state="disabled")
             self.generate_button.configure(state="disabled")
 
@@ -143,6 +147,25 @@ class App(tk.Tk):
         try:
             components = install_components(progress=lambda label, done, total:
                 self.events.put(("download", label, done, total)))
+            self.events.put(("installed", components))
+        except Exception as exc:
+            self.events.put(("error", str(exc)))
+
+    def import_local(self):
+        selected = filedialog.askopenfilename(
+            title="选择已下载的 SD 1.5 Q4 GGUF 模型",
+            filetypes=(("GGUF 模型", "*.gguf"), ("所有文件", "*.*")),
+        )
+        if not selected:
+            return
+        self.install_button.configure(state="disabled")
+        self.import_button.configure(state="disabled")
+        self.status.configure(text="正在导入本地模型，请稍候…")
+        threading.Thread(target=self._import_worker, args=(Path(selected),), daemon=True).start()
+
+    def _import_worker(self, source):
+        try:
+            components = import_model(source)
             self.events.put(("installed", components))
         except Exception as exc:
             self.events.put(("error", str(exc)))
@@ -207,11 +230,13 @@ class App(tk.Tk):
                 elif event[0] == "done":
                     self.generate_button.configure(state="normal")
                     self.install_button.configure(state="normal")
+                    self.import_button.configure(state="normal")
                     self.status.configure(text=f"完成：{len(event[1])} 张")
                     if messagebox.askyesno(APP_NAME, "图片生成完成。是否打开保存文件夹？"):
                         os.startfile(str(event[1][0].parent))
                 elif event[0] == "error":
                     self.install_button.configure(state="normal")
+                    self.import_button.configure(state="normal")
                     if self.components.ready:
                         self.generate_button.configure(state="normal")
                     self.progress.stop()
